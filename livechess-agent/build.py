@@ -48,15 +48,12 @@ def download(cache, name, url, expected):
     if target.exists():
         verify(target, expected)
         return
-    with tempfile.NamedTemporaryFile(dir=cache, delete=False) as temporary:
-        pending = Path(temporary.name)
-        try:
+    descriptor, name = tempfile.mkstemp(dir=cache)
+    pending = Path(name)
+    try:
+        with os.fdopen(descriptor, "wb") as temporary:
             with urllib.request.urlopen(url, timeout=120) as response:
                 shutil.copyfileobj(response, temporary)
-        except BaseException:
-            pending.unlink(missing_ok=True)
-            raise
-    try:
         verify(pending, expected)
         pending.replace(target)
     finally:
