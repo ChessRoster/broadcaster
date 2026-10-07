@@ -4,6 +4,7 @@ import { useSettingsStore } from '../stores/settings';
 import { useUserStore } from '../stores/user';
 import { useLogStore } from '../stores/logs';
 import AddUserToSidebar from './AddUserToSidebar.vue';
+import LiveChessPairings from './LiveChessPairings.vue';
 import { invoke } from '@tauri-apps/api/core';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { toast } from 'vue3-toastify';
@@ -82,6 +83,7 @@ async function openDevTools() {
 
 <template>
   <h2 class="text-gray-400 text-2xl font-bold leading-7 sm:truncate sm:text-3xl sm:tracking-tight">Settings</h2>
+  <LiveChessPairings />
 
   <template v-if="user.isLoggedIn()">
     <div class="grid max-w-7xl grid-cols-1 gap-x-8 gap-y-10 px-4 py-8 sm:px-6 md:grid-cols-3 lg:px-8">

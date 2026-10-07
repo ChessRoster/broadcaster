@@ -5,10 +5,13 @@ import { useFavoritesStore } from './stores/favorites';
 import { RouteNames } from './router';
 import { useSettingsStore } from './stores/settings';
 import { checkForUpdates } from './updater';
+import { onUnmounted } from 'vue';
+import { startPairingSync } from './stores/pairings';
 
 const user = useUserStore();
 const favorites = useFavoritesStore();
 const settings = useSettingsStore();
+onUnmounted(startPairingSync());
 
 settings.setVersion();
 

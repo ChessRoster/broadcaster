@@ -1,0 +1,89 @@
+name: Lichess desktop integration
+on:
+  push:
+
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            runner: windows-latest
+            executable: broadcaster.exe
+          - platform: macos-intel
+            runner: macos-15-intel
+            executable: broadcaster
+          - platform: linux
+            runner: ubuntu-24.04
+            executable: broadcaster
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build agent from pinned inputs and verify tracked integrity
+        shell: bash
+        run: python3 livechess-agent/build.py --verify-tracked --output src-tauri/resources/livechess-agent.jar
+      - name: Install Linux desktop dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev librsvg2-dev libayatana-appindicator3-dev patchelf xvfb xauth libgtk2.0-0 libxtst6 libxrender1 libxi6 libasound2t64 libgl1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - name: Verify Linux native LiveChess runtime
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://download.livechesscloud.com/installer/2.2/DGT-LiveChess-2.2-x86_64.deb --output "$RUNNER_TEMP/livechess.deb"
+          echo "456abb65819bdb56cf0918b523b32cf3ea53a3c5ba6be933e666895279ecfe2f  $RUNNER_TEMP/livechess.deb" | sha256sum --check
+          dpkg-deb -x "$RUNNER_TEMP/livechess.deb" "$RUNNER_TEMP/livechess-package"
+          python3 tests/livechess-native-smoke.py "$RUNNER_TEMP/livechess-package/opt/DGTLiveChess/DGTLiveChess" src-tauri/resources/livechess-agent.jar
+      - name: Verify macOS native LiveChess runtime
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://download.livechesscloud.com/installer/2.2/DGT-LiveChess-2.2.dmg --output "$RUNNER_TEMP/livechess.dmg"
+          echo "f66c071957254e7614e4fcac520e60659605a1611416314a53ea334015c25a34  $RUNNER_TEMP/livechess.dmg" | shasum -a 256 --check
+          mkdir -p "$RUNNER_TEMP/livechess-mount"
+          hdiutil attach "$RUNNER_TEMP/livechess.dmg" -mountpoint "$RUNNER_TEMP/livechess-mount" -readonly -nobrowse -quiet
+          trap 'hdiutil detach "$RUNNER_TEMP/livechess-mount" -quiet' EXIT
+          python3 tests/livechess-native-smoke.py "$RUNNER_TEMP/livechess-mount/DGT LiveChess.app/Contents/MacOS/DGT LiveChess" src-tauri/resources/livechess-agent.jar
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+        env:
+          VITE_ENABLE_UPDATES: 'false'
+      - run: cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+      - run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --features custom-protocol -- -D warnings
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - run: cargo build --manifest-path src-tauri/Cargo.toml --features custom-protocol
+      - name: Check portable app resources
+        shell: pwsh
+        env:
+          APP_EXECUTABLE: ${{ matrix.executable }}
+        run: |
+          if (-not (Test-Path "src-tauri/target/debug/$env:APP_EXECUTABLE")) { throw 'Missing app executable' }
+          if (-not (Test-Path 'src-tauri/target/debug/resources/livechess-agent.jar')) { throw 'Missing bundled agent' }
+      - name: Upload testable app and bundled agent
+        uses: actions/upload-artifact@v4
+        with:
+          name: lichess-broadcaster-${{ matrix.platform }}-debug
+          path: |
+            src-tauri/target/debug/${{ matrix.executable }}
+            src-tauri/target/debug/resources/livechess-agent.jar
+          if-no-files-found: error
+
+

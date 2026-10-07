@@ -5,3 +5,4 @@
 
 /.pnpm-store
 /pnpm-lock.yaml
+livechess-agent/build/
