@@ -6,6 +6,8 @@ import { useSettingsStore } from './stores/settings';
 import { toast } from 'vue3-toastify';
 
 export async function checkForUpdates() {
+  // Development builds may explicitly skip checks; normal builds retain upstream defaults.
+  if (import.meta.env.VITE_ENABLE_UPDATES === 'false') return;
   const update = await check();
   console.log({ update });
 
