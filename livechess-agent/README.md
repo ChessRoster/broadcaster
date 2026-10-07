@@ -8,13 +8,16 @@ The JAR contains only these adapter classes. LiveChess and its extracted applica
 
 ## Build
 
-Use a locally installed, licensed LiveChess distribution and an Eclipse ECJ compiler compatible with Java 8. Obtain the application JAR from the installed package loader's local extraction; it is a compile-time dependency only.
+The portable source build requires Python 3.9+ and Java 8 or newer (CI uses Temurin 17). It downloads the official LiveChess 2.2 Linux package and ECJ 3.26.0 into ignored `build/dependencies`, checks SHA-256 hashes, and extracts only the compile dependencies. The application, Java 8 boot classes, crypto classes and JavaFX library are individually pinned. No installer scripts execute and no proprietary classes enter the output JAR.
 
-```powershell
-./livechess-agent/build.ps1 -ApplicationJar C:\local\application.jar -EcjJar C:\local\ecj.jar
+```sh
+python3 livechess-agent/build.py --output src-tauri/resources/livechess-agent.jar
+python3 livechess-agent/build.py --verify-tracked
 ```
 
-This compiles with the LiveChess bundled Java runtime and JavaFX library and writes `src-tauri/resources/livechess-agent.jar`. A Java 8 JDK can also compile the two source files and package them with `Premain-Class: BridgeAgent`.
+Compilation uses a fresh temporary classes directory and the pinned Java 8 boot classpath, independent of the host Java version. The JAR has sorted uncompressed entries, fixed 1980 timestamps and no source debug metadata, making byte-for-byte comparison portable. `--verify-tracked` fails if the freshly built JAR differs from the tracked resource; by default the verified result is written to `livechess-agent/build/livechess-agent.jar`. CI verifies and replaces the resource with the source-built result before native smoke tests and desktop/release builds. On Windows, `build.ps1` wraps the same builder; use `-Python` and `-Java` for explicit executable paths.
+
+The dependency download and proprietary application integration do not establish a redistribution license or resolve upstream licensing questions. Only this project's adapter classes are packaged; distribution terms require separate review.
 
 Launch LiveChess's bundled runtime with `-Dfile.encoding=UTF-8` and `-javaagent:<absolute-jar-path>=1983,@<absolute-token-file>` before its normal classpath/main arguments. The UTF-8 file must contain a token of 32–256 URL-safe alphanumeric, underscore or hyphen characters; surrounding whitespace is trimmed. Protect the token file with private permissions (0600 on Unix). Legacy inline tokens are accepted for compatibility but expose the credential in process command lines. Only one LiveChess process may own a data directory. The broadcaster must check for an existing process before launching; attaching to an already-running uninstrumented instance is unsupported.
 
