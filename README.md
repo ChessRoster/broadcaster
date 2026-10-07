@@ -15,6 +15,8 @@ Some smart chess boards used in OTB (over the board) events can write PGN files 
 
 This fork adds an optional reverse path: publish pairing PGN to a Lichess broadcast, and Broadcaster imports it into DGT LiveChess automatically. Existing PGN-folder uploads continue to send the recorded moves back to Lichess.
 
+**Start here: [Step-by-step guide to importing Lichess pairings into DGT LiveChess](livechess-agent/USER-GUIDE.md).** It covers installation, the exact app controls, a sample pairing file, later rounds, move uploads and troubleshooting. Use a build containing this feature; the upstream releases linked below do not necessarily include it.
+
 Close an ordinarily launched LiveChess instance, enter its installation path, and use **Start LiveChess** in Broadcaster's Settings or round page. The app launches LiveChess with its bundled pairing add-on; it never terminates an existing instance. Managed startup supports Windows, macOS and Linux installation layouts and requires LiveChess's bundled Java runtime. Select the installation as follows:
 
 | Platform | Installation path                                                                                                                                          |

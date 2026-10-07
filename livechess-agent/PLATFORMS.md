@@ -2,6 +2,16 @@
 
 Inspection date: 2026-10-07. These are Intel packages; no ARM-native installer was found on the official download page. Downloaded proprietary artifacts and extraction tools remain in ignored `build/platform-research`, not in distribution resources.
 
+## Apple Silicon and the end of Rosetta support
+
+Broadcaster's release workflow targets a universal macOS application with Intel and Apple Silicon support. DGT LiveChess's inspected launcher and bundled Java runtime are Intel-only, so LiveChess requires Rosetta on Apple Silicon. The combined Apple Silicon/Rosetta workflow has not been tested.
+
+[Apple's announced transition](https://developer.apple.com/news/?id=w5ngl9k2) ends general Rosetta support after macOS 27. The current Intel-only DGT package cannot run on Apple Silicon under macOS 28. Continuing on newer macOS requires an ARM-compatible LiveChess launcher, Java/JavaFX runtime and any native dependencies, or a replacement board application. Replacing the bundled runtime has not been verified and is not a supported workaround. A community effort would need to establish compatibility and address redistribution permissions for proprietary DGT components. Windows, Linux and a compatible older macOS remain alternatives; this does not make LiveChess Windows-only.
+
+See the [operator guide](USER-GUIDE.md) for setup and the distinction between pairing import and board recording.
+
+## Package layouts
+
 | Platform      | Launcher                                         | Loader JAR                          |
 | ------------- | ------------------------------------------------ | ----------------------------------- |
 | Windows       | `DGT LiveChess.exe`                              | `app/package.jar`                   |

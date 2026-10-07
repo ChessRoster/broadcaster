@@ -1,5 +1,7 @@
 # LiveChess pairing adapter
 
+For tournament operators, start with the [step-by-step pairing import guide](USER-GUIDE.md). The details below describe the adapter's build and protocol.
+
 This startup agent supplies the pairing-write API missing from LiveChess. It loads into the application classloader and executes model operations on the JavaFX application thread. Only **LiveChess 2.2 build 18071800** and **2.2.11 build 26052800** are accepted; the relevant importer, parser, model and persistence code was audited for both builds. It does not start recording, create tournaments, or replace populated rounds.
 
 The JAR contains only these adapter classes. LiveChess and its extracted application JAR must not be redistributed with the broadcaster.
