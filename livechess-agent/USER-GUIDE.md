@@ -89,7 +89,7 @@ To send recorded moves back to Lichess, use LiveChess's PGN filesystem export an
 
 Publish each new round's complete, unplayed pairings to the same Lichess tournament before play. Broadcaster discovers future rounds automatically and processes the oldest unfinished import first. You do not need to create another mapping for every round.
 
-After restarting your computer, open Broadcaster, sign in if needed, and use **Start LiveChess** again. Saved mappings remain available. If the Lichess account or server changes, sync pauses: review the mapping in **Settings** and use **Resume tournament sync** when it is correct.
+After restarting your computer, open Broadcaster, sign in if needed, and use **Start LiveChess** again. Saved mappings remain available. If the Lichess account or server changes, sync pauses. Sign in on the mapping's configured server, review it in **Settings**, and use **Resume tournament sync** when it is correct. For an existing unfinished round that also paused, review that round's mapping and click **Resume import** as well. Resuming explicitly associates that mapping with the signed-in account.
 
 Use **Pause tournament sync** before changing pairings or investigating a problem. An import already sent to LiveChess can still finish. Once imported, later edits on Lichess do not update that local round; corrections require manual reconciliation in LiveChess. If the board count changes between rounds, pause and reconcile the mapping rather than leaving the old count active.
 

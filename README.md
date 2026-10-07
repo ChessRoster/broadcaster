@@ -13,7 +13,7 @@ Some smart chess boards used in OTB (over the board) events can write PGN files 
 
 ### LiveChess pairing sync
 
-This fork adds an optional reverse path: publish pairing PGN to a Lichess broadcast, and Broadcaster imports it into DGT LiveChess automatically. Existing PGN-folder uploads continue to send the recorded moves back to Lichess.
+LiveChess pairing sync provides an optional reverse path: publish pairing PGN to a Lichess broadcast, and Broadcaster imports it into DGT LiveChess automatically. Existing PGN-folder uploads continue to send the recorded moves back to Lichess.
 
 **Start here: [Step-by-step guide to importing Lichess pairings into DGT LiveChess](livechess-agent/USER-GUIDE.md).** It covers installation, the exact app controls, a sample pairing file, later rounds, move uploads and troubleshooting. Use a build containing this feature; the upstream releases linked below do not necessarily include it.
 
@@ -35,7 +35,7 @@ Each published game must have a unique **Board** header (`1` through the configu
 
 The app saves each pending request before sending it. LiveChess backs up the tournament, persists the changes, and records a receipt. Lost responses retry the same request; conflicting or populated rounds are not overwritten. Pausing a tournament stops undispatched imports; an already-dispatched import can finish. Changing Lichess server or account pauses sync until explicitly resumed. Starting board recording is still a separate LiveChess action.
 
-This uses private LiveChess internals. Source, protocol, reproducible build instructions and isolated-JVM test evidence are in [`livechess-agent/README.md`](livechess-agent/README.md) and [`livechess-agent/TESTING.md`](livechess-agent/TESTING.md). No DGT application binary is redistributed. Bridge credentials remain in the app's local data folder; the OS account running the app is trusted. Development builds keep automatic binary updates disabled until compatible release artifacts are available.
+This uses private LiveChess internals. Source, protocol, build instructions and isolated-JVM test evidence are in [`livechess-agent/README.md`](livechess-agent/README.md) and [`livechess-agent/TESTING.md`](livechess-agent/TESTING.md). No DGT application binary is redistributed. Bridge credentials remain in the app's local data folder; the OS account running the app is trusted. Release builds retain the normal signed updater configuration; development builds can explicitly disable update checks.
 
 The integration workflow builds platform artifacts with the agent resource and embedded frontend. Keep each executable or application bundle together with its resource files when extracting an artifact. These development builds are unsigned and are not installers; Windows requires WebView2, and every platform requires a supported LiveChess installation. Follow the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your operating system before running normal development/build commands. CI compilation does not establish that a physical DGT board or a particular LiveChess installation has been tested on that platform.
 
@@ -50,6 +50,8 @@ To download the latest version, go to the [Releases](https://github.com/lichess-
 ## Code signing policy
 
 This program uses free code signing provided by [SignPath.io](https://signpath.io?utm_source=foundation&utm_medium=github&utm_campaign=lichess) and a certificate by the [SignPath Foundation](https://signpath.org?utm_source=foundation&utm_medium=github&utm_campaign=lichess)
+
+This policy describes official releases. CI development artifacts are unsigned and do not inherit release signing merely by using the same source code.
 
 ## Privacy Policy
 
