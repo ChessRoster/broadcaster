@@ -6,10 +6,15 @@ import { useSettingsStore } from './stores/settings';
 import { toast } from 'vue3-toastify';
 
 export async function checkForUpdates() {
+  const settings = useSettingsStore();
+  // Enable only when this build has compatible signed update artifacts.
+  if (import.meta.env.VITE_ENABLE_UPDATES !== 'true') {
+    settings.clearUpdateAvailable();
+    return;
+  }
   const update = await check();
   console.log({ update });
 
-  const settings = useSettingsStore();
   settings.clearUpdateAvailable();
 
   if (update) {
