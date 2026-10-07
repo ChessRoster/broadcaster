@@ -1,4 +1,5 @@
 use tauri::{AppHandle, Manager};
+mod livechess;
 
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -30,7 +31,14 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .invoke_handler(tauri::generate_handler![open_dev_tools])
+        .manage(livechess::BridgeState::default())
+        .invoke_handler(tauri::generate_handler![
+            open_dev_tools,
+            livechess::livechess_status,
+            livechess::livechess_start,
+            livechess::livechess_tournaments,
+            livechess::livechess_import
+        ])
         .setup(|app| {
             if tauri::is_dev() {
                 let window = app.get_webview_window("main").expect("no main window");
