@@ -11,6 +11,8 @@ interface DgtSocketEvent {
  * Tauri-native WebSocket wrapper. The Windows production WebView uses an HTTPS
  * origin and cannot reliably connect to a ws:// LAN endpoint itself.
  */
+let nextConnectionId = 0;
+
 export class DgtSocket {
   static readonly OPEN = 1;
   readyState = 0;
@@ -19,7 +21,7 @@ export class DgtSocket {
   onerror: ((error: Error) => void) | null = null;
   onclose: (() => void) | null = null;
 
-  private readonly connectionId = crypto.randomUUID();
+  private readonly connectionId = String(Date.now()) + '-' + String(++nextConnectionId);
   private unlisten?: UnlistenFn;
   private closed = false;
 
