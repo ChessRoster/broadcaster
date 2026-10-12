@@ -126,6 +126,14 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
       const additions: Record<string, LegalGame> = {};
       for (const meta of metadata) {
         const assignment = assignments.find(item => item.roundId === roundId && item.boardNumber === meta.boardNumber)!;
+        const concurrent = Object.values(this.games).find(game =>
+          game.roundId !== roundId && game.serialnr === assignment.serialnr &&
+          this.enabled(game.roundId),
+        );
+        if (concurrent)
+          throw new Error('Physical DGT board ' + assignment.serialnr +
+            ' is already recording active round ' + concurrent.roundId +
+            '. Disable that round before reusing this board.');
         const key = gameKey(roundId, meta.boardNumber);
         const existing = this.games[key];
         if (existing) {
