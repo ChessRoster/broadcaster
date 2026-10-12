@@ -127,8 +127,9 @@ describe('LiveChess WebSocket connection', () => {
     const pending = store.connect();
     const socket = socketState.sockets[0];
     socket.onopen?.();
+    const rejected = expect(pending).rejects.toThrow('did not respond');
     await vi.advanceTimersByTimeAsync(8000);
-    await expect(pending).rejects.toThrow('did not respond');
+    await rejected;
     expect(store.status).toBe('reconnecting');
   });
 
