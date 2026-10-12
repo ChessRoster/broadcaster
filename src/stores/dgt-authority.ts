@@ -63,11 +63,17 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
       if (!user.username || !user.accessToken) throw new Error('Sign in to Lichess before enabling recording.');
       // Stop a currently running PGN-folder watcher before enabling a second source.
       useStatusStore().stopRound(roundId);
-      if (!this.activeRoundIds.includes(roundId)) this.activeRoundIds.push(roundId);
-      this.owners[roundId] = {
+      const requestedOwner = {
         serverUrl: useSettingsStore().lichessUrl,
         username: user.username,
       };
+      const existingOwner = this.owners[roundId];
+      if (existingOwner && (existingOwner.serverUrl !== requestedOwner.serverUrl ||
+          existingOwner.username !== requestedOwner.username))
+        throw new Error('This round has saved authoritative history under another Lichess identity. ' +
+          'The existing owner must be restored before resuming.');
+      if (!this.activeRoundIds.includes(roundId)) this.activeRoundIds.push(roundId);
+      this.owners[roundId] = requestedOwner;
     },
     disable(roundId: string) {
       this.activeRoundIds = this.activeRoundIds.filter(id => id !== roundId);
@@ -225,7 +231,8 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
       const user = useUserStore();
       const settings = useSettingsStore();
       for (const [key, game] of Object.entries(this.games)) {
-        if (!this.enabled(game.roundId) || !canPublish(game) || this.errors[key] || uploadsInProgress.has(key))
+        if (!this.enabled(game.roundId) || !canPublish(game) || this.errors[key] ||
+            this.errors[game.roundId] || uploadsInProgress.has(key))
           continue;
         const owner = this.owners[game.roundId];
         if (!owner || owner.serverUrl !== settings.lichessUrl ||
