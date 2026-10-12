@@ -182,7 +182,11 @@ export function changeConnectivity(source: LegalGame, connected: boolean, now: n
     game.stableSince = undefined;
     log(game, 'online', 'LiveChess reconnected; publication remains paused until the board is verified.', now);
   } else {
-    game.reason = 'LiveChess connection lost. No move will be published until verified on reconnection.';
+    // A stale physical position observed before a disconnect is never enough
+    // to authorize publication after the connection is restored.
+    game.physicalBoard = undefined;
+    game.stableSince = undefined;
+    game.reason = 'LiveChess or the DGT board disconnected. No move will be published until reverified.';
     log(game, 'offline', game.reason, now);
   }
   return game;
