@@ -224,6 +224,15 @@ requestNotificationPermission();
       <main class="py-10">
         <div class="px-4 sm:px-6 lg:px-8">
           <router-link
+            v-if="dgt.status === 'reconnecting' && dgt.connectedAt"
+            :to="{ name: RouteNames.Settings }"
+            role="alert"
+            class="mb-4 block rounded border border-amber-500 bg-amber-950 p-4 text-amber-100 hover:bg-amber-900"
+          >
+            <strong>DGT monitoring connection lost.</strong>
+            Live PGN uploads are temporarily unverified. Open Settings to check the connection.
+          </router-link>
+          <router-link
             v-if="urgentBoards.length"
             :to="{ name: RouteNames.Settings }"
             role="alert"
