@@ -5,6 +5,7 @@ import { BroadcastRound } from '../types';
 import FolderWatcher from './FolderWatcher.vue';
 import RoundTimes from './RoundTimes.vue';
 import LiveChessPairings from './LiveChessPairings.vue';
+import DgtMonitor from './DgtMonitor.vue';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settings';
 import { useFavoritesStore } from '../stores/favorites';
@@ -119,6 +120,7 @@ watch(() => router.currentRoute.value.params.id, getRound);
     </div>
 
     <LiveChessPairings :key="round.round.id" :round-id="round.round.id" :tour-id="round.tour.id" />
+    <DgtMonitor :round-id="round.round.id" />
     <FolderWatcher v-if="round.study.writeable" :round="round" />
     <div v-else class="mt-4 bg-yellow-50 text-yellow-800 py-4 px-4">
       <svg class="inline h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
