@@ -253,6 +253,16 @@ function sourceMoves(game: string): string[] | undefined {
     : undefined;
 }
 
+const STANDARD_START_PIECES = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR';
+
+function reconstructedHistoryStartsAtGameStart(game: string, board: DgtBoardState): boolean {
+  if (!board.start) return false;
+  const head = game.split(/\r?\n\r?\n/, 1)[0];
+  const fen = headerValue(head, 'FEN');
+  const sourceStart = board.start.split(/\s+/)[0];
+  return fen ? fen.split(/\s+/)[0] === sourceStart : sourceStart === STANDARD_START_PIECES;
+}
+
 function clockSeconds(value: string | undefined): number | undefined {
   if (!value) return undefined;
   const m = /^(\d+):([0-5]\d):([0-5]\d)$/.exec(value);
@@ -290,7 +300,7 @@ export function guardDgtPgnUpload(
     let reason: string | undefined;
     if (board.match === false && board.alerted) {
       reason = 'physical position has not been reconciled by LiveChess';
-    } else if (board.match === true && board.san?.length) {
+    } else if (board.match === true && board.san?.length && reconstructedHistoryStartsAtGameStart(game, board)) {
       const moves = sourceMoves(game);
       if (moves && moves.some((move, i) => i < board.san!.length && move !== board.san![i])) {
         reason = 'PGN move history differs from the LiveChess reconstructed move list';
@@ -314,7 +324,7 @@ export function guardDgtPgnUpload(
       // A move comment belongs to the mover's *post-move* time, not the
       // opponent's running clock. Check only the latest completed move, with
       // the same reconstructed SAN list, and never infer it for custom FEN.
-      if (!reason && !headerValue(head, 'FEN') && board.san?.length) {
+      if (!reason && !headerValue(head, 'FEN') && board.san?.length && reconstructedHistoryStartsAtGameStart(game, board)) {
         const moves = sourceMoves(game);
         if (
           moves &&
