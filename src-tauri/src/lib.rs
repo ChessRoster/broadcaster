@@ -1,5 +1,6 @@
 use tauri::{AppHandle, Manager};
 mod livechess;
+mod dgt_ws;
 
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_deep_link::DeepLinkExt;
@@ -32,12 +33,16 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(livechess::BridgeState::default())
+        .manage(dgt_ws::DgtWsState::default())
         .invoke_handler(tauri::generate_handler![
             open_dev_tools,
             livechess::livechess_status,
             livechess::livechess_start,
             livechess::livechess_tournaments,
-            livechess::livechess_import
+            livechess::livechess_import,
+            dgt_ws::dgt_ws_connect,
+            dgt_ws::dgt_ws_send,
+            dgt_ws::dgt_ws_disconnect
         ])
         .setup(|app| {
             if tauri::is_dev() {
