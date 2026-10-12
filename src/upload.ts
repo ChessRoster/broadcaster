@@ -3,6 +3,10 @@ import { lichessApiClient } from './client';
 import { join, sep } from '@tauri-apps/api/path';
 import { BroadcastPgnPushTags } from './types';
 import { useLogStore } from './stores/logs';
+import { normalizeDgtClockPgn } from './dgt-clocks';
+
+const clockNoticeRounds = new Set<string>();
+const clockWarningsShown = new Set<string>();
 
 export const isPgnFile = (path: string): boolean => path.endsWith('.pgn');
 export const isMultiGamePgn = (path: string): boolean => path === 'games.pgn' || path.endsWith(`${sep()}games.pgn`);
@@ -51,11 +55,28 @@ export async function uploadFolderToRound(roundId: string, folder: string): Prom
 async function pushPgnToRound(roundId: string, pgn: string): Promise<void> {
   const logs = useLogStore();
 
+  // Rewrite only recognized DGT clock notation. Never modify the PGNs on disk.
+  const normalized = normalizeDgtClockPgn(pgn);
+  if (normalized.changedAnnotations && !clockNoticeRounds.has(roundId)) {
+    clockNoticeRounds.add(roundId);
+    logs.info(
+      `Normalized DGT clock annotations for Lichess (${normalized.changedAnnotations} updates across ${normalized.changedGames} games).`,
+    );
+  }
+  for (const warning of normalized.warnings) {
+    const key = `${roundId}:${warning}`;
+    if (!clockWarningsShown.has(key)) {
+      clockWarningsShown.add(key);
+      logs.error(`DGT clock: ${warning}`);
+    }
+  }
+
+
   const pushResponse = await lichessApiClient({
     'Content-Type': 'text/plain',
   }).POST('/api/broadcast/round/{broadcastRoundId}/push', {
     params: { path: { broadcastRoundId: roundId } },
-    body: pgn,
+    body: normalized.pgn,
     bodySerializer: body => body,
   });
 
