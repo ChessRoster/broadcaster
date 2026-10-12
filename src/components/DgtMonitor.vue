@@ -161,7 +161,7 @@ function currentBoard(serialnr: string): number | undefined {
         v-for="board in boards"
         :key="board.serialnr"
         class="rounded-md border p-3"
-        :class="dgtBoardHealth(board, Date.now()) === 'attention' ? 'border-amber-600 bg-amber-950/30' : 'border-white/10'"
+        :class="dgtBoardHealth(board) === 'attention' ? 'border-amber-600 bg-amber-950/30' : 'border-white/10'"
       >
         <div class="flex flex-wrap items-center justify-between gap-2">
           <div>
