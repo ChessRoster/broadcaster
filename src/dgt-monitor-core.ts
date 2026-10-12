@@ -213,7 +213,7 @@ export function validDgtClock(value: unknown): value is DgtClock {
   );
 }
 
-export function dgtBoardHealth(board: DgtBoardState, now: number): DgtBoardHealth {
+export function dgtBoardHealth(board: DgtBoardState): DgtBoardHealth {
   if (board.state === 'NOTRESPONDING' || board.alerted) return 'attention';
   if (board.match === false) return 'pending';
   if (board.match === true) return 'ok';
@@ -249,7 +249,7 @@ function sourceMoves(game: string): string[] | undefined {
     .map(s => s.trim())
     .filter(s => s && !/^\$\d+$/.test(s) && !/^(?:1-0|0-1|1\/2-1\/2|\*)$/.test(s));
   return tokens.every(s => /^(?:O-O(?:-O)?|0-0(?:-0)?|[KQRBN]?[a-h]?[1-8]?x?[a-h][1-8](?:=[QRBN])?)[+#]?[!?]*$/.test(s))
-    ? tokens.map(s => s.replace(/[!?]+$/, '').replace(/^0-0(-0)?/, (_, long: string) => 'O-O' + (long || '')))
+    ? tokens.map(s => s.replace(/[!?]+$/, '').replace(/^0-0(-0)?/, (_, long: string) => 'O-O' + (long ? '-O' : '')))
     : undefined;
 }
 
