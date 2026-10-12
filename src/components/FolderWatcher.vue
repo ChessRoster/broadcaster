@@ -5,7 +5,7 @@ import { useLogStore } from '../stores/logs';
 import { useStatusStore } from '../stores/status';
 import { fileList, isMultiGamePgn, uploadFolderToRound } from '../upload';
 import { isWrite } from '../watcher';
-import { computed } from 'vue';
+import { computed, onUnmounted } from 'vue';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { BroadcastRound } from '../types';
 import { lichessApiClient } from '../client';
@@ -103,6 +103,10 @@ async function checkForExistingPgnFiles(path: string) {
 function stopWatching() {
   status.stopRound(props.round.round.id);
 }
+
+// Switching to authoritative DGT mode unmounts this component. Stop the
+// legacy PGN watcher so both sources cannot publish to the same round.
+onUnmounted(stopWatching);
 
 function handleFolderChange(event: WatchEvent): void {
   if (!isWrite(event)) return;

@@ -3,9 +3,11 @@ import { computed, reactive, watch } from 'vue';
 import { toast } from 'vue3-toastify';
 import { dgtBoardHealth, type DgtBoardState } from '../dgt-monitor-core';
 import { useDgtMonitorStore } from '../stores/dgt-monitor';
+import { useDgtAuthorityStore } from '../stores/dgt-authority';
 
 const props = defineProps<{ roundId?: string }>();
 const monitor = useDgtMonitorStore();
+const authority = useDgtAuthorityStore();
 const slots = reactive<Record<string, number>>({});
 const boards = computed(() => Object.values(monitor.boards).sort((a, b) => a.serialnr.localeCompare(b.serialnr)));
 const assignments = computed(() => monitor.assignments.filter(item => item.roundId === props.roundId));
@@ -189,7 +191,7 @@ function currentBoard(serialnr: string): number | undefined {
           Physical position: {{ board.board }}
         </p>
         <button
-          v-if="monitor.status === 'connected' && board.match === undefined"
+          v-if="monitor.status === 'connected' && board.match === undefined && (!roundId || !authority.enabled(roundId))"
           type="button"
           class="mt-2 rounded bg-white/10 px-3 py-2 text-xs text-white hover:bg-white/20"
           @click="setupStandard(board.serialnr)"
@@ -223,7 +225,7 @@ function currentBoard(serialnr: string): number | undefined {
             Remove mapping
           </button>
         </div>
-        <div v-if="board.alerted" class="mt-3 border-t border-amber-700 pt-3">
+        <div v-if="board.alerted && (!roundId || !authority.enabled(roundId))" class="mt-3 border-t border-amber-700 pt-3">
           <p class="text-sm text-amber-200">
             Physical position has not matched LiveChess reconstruction for more than eight seconds.
             Check the board and correct the game in LiveChess.

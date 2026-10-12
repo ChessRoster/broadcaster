@@ -6,6 +6,8 @@ import FolderWatcher from './FolderWatcher.vue';
 import RoundTimes from './RoundTimes.vue';
 import LiveChessPairings from './LiveChessPairings.vue';
 import DgtMonitor from './DgtMonitor.vue';
+import DgtSynchronization from './DgtSynchronization.vue';
+import { useDgtAuthorityStore } from '../stores/dgt-authority';
 import { openPath } from '@tauri-apps/plugin-opener';
 import { useSettingsStore } from '../stores/settings';
 import { useFavoritesStore } from '../stores/favorites';
@@ -14,6 +16,7 @@ import { BookmarkIcon as BookmarkIconOutline, ChevronLeftIcon } from '@heroicons
 import { BookmarkIcon as BookmarkIconSolid } from '@heroicons/vue/16/solid';
 
 const settings = useSettingsStore();
+const dgtAuthority = useDgtAuthorityStore();
 const favorites = useFavoritesStore();
 const round = ref<BroadcastRound | null>(null);
 
@@ -121,7 +124,8 @@ watch(() => router.currentRoute.value.params.id, getRound);
 
     <LiveChessPairings :key="round.round.id" :round-id="round.round.id" :tour-id="round.tour.id" />
     <DgtMonitor :round-id="round.round.id" />
-    <FolderWatcher v-if="round.study.writeable" :round="round" />
+    <DgtSynchronization :round-id="round.round.id" :writable="!!round.study.writeable" />
+    <FolderWatcher v-if="round.study.writeable && !dgtAuthority.enabled(round.round.id)" :round="round" />
     <div v-else class="mt-4 bg-yellow-50 text-yellow-800 py-4 px-4">
       <svg class="inline h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
         <path

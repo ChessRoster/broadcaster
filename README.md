@@ -39,6 +39,20 @@ This uses private LiveChess internals. Source, protocol, build instructions and 
 
 The integration workflow builds platform artifacts with the agent resource and embedded frontend. Keep each executable or application bundle together with its resource files when extracting an artifact. These development builds are unsigned and are not installers; Windows requires WebView2, and every platform requires a supported LiveChess installation. Follow the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your operating system before running normal development/build commands. CI compilation does not establish that a physical DGT board or a particular LiveChess installation has been tested on that platform.
 
+### Authoritative WebSocket recording and physical-position recovery
+
+The optional [authoritative DGT recorder](docs/DGT-AUTHORITATIVE-RECOVERY.md)
+reads board events directly from LiveChess, validates legal moves using chess.js,
+and submits in-memory PGNs based on Lichess pairing/player metadata. It
+temporarily suspends an affected game for physical discrepancies, supports
+automatic and manually verified recovery, and preserves the remaining games.
+
+**Spectator pinned interruption messages remain blocked:** the public OAuth
+API does not expose LiveChess-compatible per-broadcast-chapter pinned-comment
+writes. The recorder reports local operator alerts but does not claim to have
+published a spectator-facing warning. It also does not adjudicate game results
+or guarantee physical clock synchronization.
+
 ### LiveChess board monitoring and operator alerts
 
 Broadcaster can subscribe to the existing LiveChess WebSocket API on this computer or a reachable
