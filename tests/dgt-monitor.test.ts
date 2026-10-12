@@ -133,6 +133,12 @@ describe('monitored PGN upload guarding', () => {
     expect(checked.held[0].reason).toContain('zero clock');
   });
 
+  it('holds an implausible last-move zero clock when hardware still has time', () => {
+    const pgn = game(1, '1. e4 {[%clk 0:00:32]} e5 {[%clk 0:00:00]}');
+    const checked = guardDgtPgnUpload('abcd1234', pgn, assignments, { '123': monitored() }, NOW);
+    expect(checked.held[0].reason).toContain('latest PGN move clock');
+  });
+
   it('does not guess whether a DGT zero reading means an actual flag', () => {
     const checked = guardDgtPgnUpload(
       'abcd1234',
