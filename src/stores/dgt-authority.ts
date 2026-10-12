@@ -174,6 +174,13 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
         }
       }
     },
+    boardDisconnected(serialnr: string, now = Date.now()) {
+      for (const [key, source] of Object.entries(this.games)) {
+        if (source.serialnr !== serialnr || !this.enabled(source.roundId)) continue;
+        const game = changeConnectivity(source, false, now);
+        this.updateGame(key, source, game);
+      }
+    },
     connectionChanged(connected: boolean, now = Date.now()) {
       for (const [key, source] of Object.entries(this.games)) {
         if (!this.enabled(source.roundId)) continue;
