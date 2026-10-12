@@ -103,6 +103,38 @@ describe('authoritative DGT game', () => {
     expect(game.moves[game.moves.length - 1]).toBe('O-O');
   });
 
+  it('does not record an intermediate rook move while castling is being completed', () => {
+    const base = ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5'];
+    let game = boot();
+    game = observeLiveChess(game, {
+      board: physical(base), san: base, start: STARTING_FEN,
+    }, 100, cfg);
+    game = tickReconciliation(game, 800, cfg);
+    const intermediateRook = physical([...base, 'Rf1']);
+    game = observeLiveChess(game, { board: intermediateRook }, 1000, cfg);
+    game = tickReconciliation(game, 2100, cfg);
+    expect(game.moves).toEqual(base);
+    expect(canPublish(game)).toBe(false);
+    game = observeLiveChess(game, { board: physical([...base, 'O-O']) }, 2300, cfg);
+    game = tickReconciliation(game, 4900, cfg);
+    expect(game.moves[game.moves.length - 1]).toBe('O-O');
+  });
+
+  it('does not flag a normal legal move merely because its clock was pressed quickly', () => {
+    let game = boot();
+    game = observeLiveChess(game, {
+      clock: { white: 40, black: 40, run: true, time: 100 },
+    }, 100, cfg);
+    game = observeLiveChess(game, {
+      board: physical(['e4']),
+      clock: { white: 40, black: 40, run: false, time: 200 },
+    }, 200, cfg);
+    expect(game.state).toBe('PENDING_VERIFICATION');
+    expect(game.events.some(item => item.type === 'interrupted')).toBe(false);
+    game = tickReconciliation(game, 3000, cfg);
+    expect(game.moves).toEqual(['e4']);
+  });
+
   it('accepts en passant with the appropriate full game history', () => {
     const before = ['e4', 'a6', 'e5', 'd5'];
     let game = boot();
