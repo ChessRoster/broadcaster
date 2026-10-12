@@ -107,6 +107,23 @@ describe('authoritative PGN publication', () => {
     expect(api.push.mock.calls[0][1].body).not.toContain('[Board "2"]');
   });
 
+  it('one slow game upload does not prevent another verified board from uploading', async () => {
+    const store = useDgtAuthorityStore();
+    installGame(1, '111', []);
+    installGame(2, '222', []);
+    let releaseFirst: ((value: unknown) => void) | undefined;
+    api.push.mockImplementationOnce(() => new Promise(resolve => { releaseFirst = resolve; }));
+    const work = store.publishAll(10000);
+    // Both HTTP requests must be started even while the first is pending.
+    expect(api.push).toHaveBeenCalledTimes(2);
+    releaseFirst?.({
+      response: { ok: true, status: 200 },
+      data: { games: [{ moves: 1, tags: { White: 'A' } }] },
+    });
+    await work;
+    expect(store.games[gameKey('abcd1234', 2)].lastPublishedPgn).toBeTruthy();
+  });
+
   it('requires an authorized matching Lichess identity for publication', async () => {
     const store = useDgtAuthorityStore();
     installGame(1, '111', []);
