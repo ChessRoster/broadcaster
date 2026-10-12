@@ -51,7 +51,9 @@ fn check_endpoint(endpoint: &str) -> Result<(), String> {
     }
     if host == "localhost"
         || ((host.ends_with(".local") || !host.contains('.'))
-            && host.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
+            && host
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '.')
             && host.len() <= 253)
     {
         return Ok(());
@@ -113,10 +115,13 @@ pub async fn dgt_ws_connect(
                 }
             }
         }
-        let _ = app.emit("dgt-ws-event", serde_json::json!({
-            "connectionId": stream_id,
-            "kind": "closed"
-        }));
+        let _ = app.emit(
+            "dgt-ws-event",
+            serde_json::json!({
+                "connectionId": stream_id,
+                "kind": "closed"
+            }),
+        );
     });
     let mut current = active.lock().map_err(|_| "DGT socket state unavailable.")?;
     if generation.load(Ordering::SeqCst) != id {
@@ -140,7 +145,10 @@ pub fn dgt_ws_send(
     if data.len() > 65536 {
         return Err("DGT WebSocket message too large.".into());
     }
-    let current = state.active.lock().map_err(|_| "DGT socket state unavailable.")?;
+    let current = state
+        .active
+        .lock()
+        .map_err(|_| "DGT socket state unavailable.")?;
     let active = current.as_ref().ok_or("DGT WebSocket is not connected.")?;
     if active.id != connection_id || active.task.is_finished() {
         return Err("DGT WebSocket connection is no longer active.".into());
@@ -156,8 +164,14 @@ pub fn dgt_ws_disconnect(
     state: State<'_, DgtWsState>,
     connection_id: String,
 ) -> Result<(), String> {
-    let mut current = state.active.lock().map_err(|_| "DGT socket state unavailable.")?;
-    if current.as_ref().is_some_and(|socket| socket.id == connection_id) {
+    let mut current = state
+        .active
+        .lock()
+        .map_err(|_| "DGT socket state unavailable.")?;
+    if current
+        .as_ref()
+        .is_some_and(|socket| socket.id == connection_id)
+    {
         state.generation.fetch_add(1, Ordering::SeqCst);
         if let Some(old) = current.take() {
             old.task.abort();
