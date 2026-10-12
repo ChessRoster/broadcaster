@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import { toast } from 'vue3-toastify';
-import { useDgtAuthorityStore, gameKey } from '../stores/dgt-authority';
+import { useDgtAuthorityStore } from '../stores/dgt-authority';
 import { useDgtMonitorStore } from '../stores/dgt-monitor';
 import {
   SPECTATOR_INTERRUPTION,
