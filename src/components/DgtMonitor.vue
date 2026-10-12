@@ -48,6 +48,15 @@ async function connect() {
   }
 }
 
+function setupStandard(serialnr: string) {
+  try {
+    monitor.setupStandardReconstruction(serialnr);
+    toast.info('Requested a fresh standard-chess reconstruction from LiveChess.');
+  } catch (error) {
+    toast.error(String(error));
+  }
+}
+
 function assign(serialnr: string) {
   if (!props.roundId) return;
   try {
@@ -179,6 +188,14 @@ function currentBoard(serialnr: string): number | undefined {
         <p v-if="board.board" class="mt-1 break-all font-mono text-xs text-gray-400">
           Physical position: {{ board.board }}
         </p>
+        <button
+          v-if="monitor.status === 'connected' && board.match === undefined"
+          type="button"
+          class="mt-2 rounded bg-white/10 px-3 py-2 text-xs text-white hover:bg-white/20"
+          @click="setupStandard(board.serialnr)"
+        >
+          Start standard-game move matching
+        </button>
         <p v-if="board.clock && (board.clock.white === 0 || board.clock.black === 0)" class="mt-2 text-xs text-amber-300">
           DGT reports a zero reading. This feed does not confirm a hardware flag-fall event.
         </p>
@@ -227,6 +244,12 @@ function currentBoard(serialnr: string): number | undefined {
     </div>
     <p v-else-if="monitor.status === 'connected'" class="mt-4 text-sm text-amber-300">
       LiveChess answered, but no physical boards were reported.
+    </p>
+
+    <p class="mt-3 text-xs text-gray-400">
+      If LiveChess has not provided a match indicator, select “Start standard-game move matching” for the
+      relevant board. This requests feed-specific reconstruction from the normal chess starting position;
+      it is not suitable for Chess960 or custom-FEN games. A midgame start may not reconstruct all prior moves.
     </p>
 
     <p v-if="roundId" class="mt-4 text-xs text-gray-400">
