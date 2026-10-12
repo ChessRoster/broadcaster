@@ -54,7 +54,7 @@ describe('authoritative DGT game', () => {
     expect(game.state).toBe('PENDING_VERIFICATION');
     expect(game.moves).toEqual([]);
     expect(canPublish(game)).toBe(false);
-    game = tickReconciliation(game, 701, cfg);
+    game = tickReconciliation(game, 2700, cfg);
     expect(game.moves).toEqual(['e4']);
     expect(game.state).toBe('LIVE');
     expect(canPublish(game)).toBe(true);
@@ -85,7 +85,7 @@ describe('authoritative DGT game', () => {
     const lifted = 'rnbqkbnr/ppp1pppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR';
     game = observeLiveChess(game, { board: lifted, match: false }, 1000, cfg);
     game = observeLiveChess(game, { board: physical(['e4', 'd5', 'exd5']) }, 1100, cfg);
-    game = tickReconciliation(game, 1800, cfg);
+    game = tickReconciliation(game, 5800, cfg);
     expect(game.moves).toEqual(['e4', 'd5', 'exd5']);
     expect(canPublish(game)).toBe(true);
   });
@@ -99,7 +99,7 @@ describe('authoritative DGT game', () => {
     game = tickReconciliation(game, 800, cfg);
     expect(game.moves).toEqual(base);
     game = observeLiveChess(game, { board: physical([...base, 'O-O']) }, 1000, cfg);
-    game = tickReconciliation(game, 1800, cfg);
+    game = tickReconciliation(game, 5800, cfg);
     expect(game.moves[game.moves.length - 1]).toBe('O-O');
   });
 
@@ -111,7 +111,7 @@ describe('authoritative DGT game', () => {
     }, 100, cfg);
     game = tickReconciliation(game, 800, cfg);
     game = observeLiveChess(game, { board: physical([...before, 'exd6']) }, 1000, cfg);
-    game = tickReconciliation(game, 1800, cfg);
+    game = tickReconciliation(game, 5800, cfg);
     expect(game.moves[game.moves.length - 1]).toBe('exd6');
   });
 
@@ -156,7 +156,7 @@ describe('authoritative DGT game', () => {
   it('does not declare a game result for an illegal move', () => {
     let game = boot();
     game = moved(game, ['e4'], 100);
-    game = tickReconciliation(game, 701, cfg);
+    game = tickReconciliation(game, 2700, cfg);
     game = observeLiveChess(game, {
       board: '8/8/8/8/8/8/8/8',
     }, 1500, cfg);
@@ -173,10 +173,10 @@ describe('authoritative DGT game', () => {
     game = tickReconciliation(game, 2800, cfg);
     expect(game.state).toBe('RECONCILIATION_REQUIRED');
     game = moved(game, ['e4'], 3000);
-    game = tickReconciliation(game, 3700, cfg);
+    game = tickReconciliation(game, 5800, cfg);
     expect(game.moves).toEqual(['e4']);
     expect(game.state).toBe('RECOVERED');
-    game = tickReconciliation(game, 5200, cfg);
+    game = tickReconciliation(game, 7300, cfg);
     expect(canPublish(game)).toBe(true);
   });
 
@@ -199,7 +199,7 @@ describe('authoritative DGT game', () => {
     game = observeLiveChess(game, {
       board: physical(['d4']), san: ['e4'], start: STARTING_FEN, match: true,
     }, 100, cfg);
-    game = tickReconciliation(game, 800, cfg);
+    game = tickReconciliation(game, 2700, cfg);
     expect(game.moves).toEqual(['d4']);
     expect(game.acceptedFen).toBe(replay(STARTING_FEN, ['d4']).fen());
   });
@@ -208,7 +208,7 @@ describe('authoritative DGT game', () => {
     let game = boot();
     game = moved(game, ['e4'], 100, 200);
     game = observeLiveChess(game, { board: physical(['d4']), sourceTime: 199 }, 150, cfg);
-    game = tickReconciliation(game, 800, cfg);
+    game = tickReconciliation(game, 2700, cfg);
     expect(game.moves).toEqual(['e4']);
     game = observeLiveChess(game, { board: physical(['e4']), sourceTime: 200 }, 1000, cfg);
     expect(game.moves).toEqual(['e4']);
@@ -234,7 +234,7 @@ describe('authoritative DGT game', () => {
     expect(canPublish(a)).toBe(true);
     expect(canPublish(b)).toBe(false);
     a = moved(a, ['e4'], 500);
-    a = tickReconciliation(a, 1200, cfg);
+    a = tickReconciliation(a, 3100, cfg);
     expect(a.moves).toEqual(['e4']);
   });
 
@@ -273,7 +273,7 @@ describe('authoritative DGT game', () => {
     game = tickReconciliation(game, 13000, cfg);
     expect(game.moves).toEqual([]);
     game = resumeAutomatic(game, 14000);
-    game = tickReconciliation(game, 15000, cfg);
+    game = tickReconciliation(game, 16700, cfg);
     expect(game.moves).toEqual(['e4']);
   });
 
@@ -284,7 +284,7 @@ describe('authoritative DGT game', () => {
     game = tickReconciliation(game, 1500, cfg);
     expect(game.moves).toEqual([]);
     game = setManualPause(game, false, 1600);
-    game = tickReconciliation(game, 2400, cfg);
+    game = tickReconciliation(game, 4200, cfg);
     expect(game.moves).toEqual(['e4']);
   });
 
