@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { notify } from '../notify';
 import { useLogStore } from './logs';
+import { useStatusStore } from './status';
 import {
   applyDgtBoardUpdate,
   checkDgtMismatch,
@@ -75,7 +76,14 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
       const current = this.boards[data.serialnr] ?? newDgtBoard(data.serialnr, now);
       const { board, events } = applyDgtBoardUpdate(current, data, now);
       this.boards[data.serialnr] = board;
-      for (const event of events) this.addEvent(event);
+      for (const event of events) {
+        this.addEvent(event);
+        if (event.kind === 'recovered' || event.kind === 'board-restored') {
+          const status = useStatusStore();
+          for (const assignment of this.assignments.filter(item => item.serialnr === event.serialnr))
+            status.requestDgtRefresh(assignment.roundId);
+        }
+      }
       this.checkBoards(now);
     },
     checkBoards(now = Date.now()) {
