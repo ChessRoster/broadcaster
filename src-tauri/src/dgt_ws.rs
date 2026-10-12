@@ -83,9 +83,13 @@ pub async fn dgt_ws_connect(
         }
     }
 
-    let (socket, _) = connect_async(endpoint.as_str())
-        .await
-        .map_err(|e| format!("Could not connect to LiveChess: {e}"))?;
+    let (socket, _) = tokio::time::timeout(
+        std::time::Duration::from_secs(6),
+        connect_async(endpoint.as_str()),
+    )
+    .await
+    .map_err(|_| "LiveChess WebSocket connection timed out.")?
+    .map_err(|e| format!("Could not connect to LiveChess: {e}"))?;
     if generation.load(Ordering::SeqCst) != id {
         return Err("Connection superseded by a newer request.".into());
     }
