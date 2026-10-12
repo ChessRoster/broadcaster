@@ -27,6 +27,14 @@ export interface AcceptedEvent {
   sourcePosition?: string;
 }
 
+export interface BoardSample {
+  at: number;
+  physical?: string;
+  match?: boolean;
+  reconstructedCount?: number;
+  clockRun?: boolean | null;
+}
+
 export interface PairingMetadata {
   roundId: string;
   boardNumber: number;
@@ -58,6 +66,7 @@ export interface LegalGame extends PairingMetadata {
   lastPublishedAt?: number;
   spectatorNotice: 'not-required' | 'unsupported';
   events: AcceptedEvent[];
+  samples: BoardSample[];
 }
 
 export interface LiveChessObservation {
@@ -125,6 +134,7 @@ export function createLegalGame(metadata: PairingMetadata, serialnr: string, now
     manualPause: false,
     spectatorNotice: 'not-required',
     events: [{ at: now, type: 'pending', text: 'Waiting to verify the actual DGT position.' }],
+    samples: [],
   };
 }
 
@@ -135,10 +145,13 @@ export function validateStoredGame(game: LegalGame): LegalGame {
   return {
     ...game,
     events: Array.isArray(game.events) ? game.events.slice(0, MAX_LOG) : [],
+    samples: Array.isArray(game.samples) ? game.samples.slice(0, 80) : [],
     spectatorNotice: game.spectatorNotice === 'unsupported' ? 'unsupported' : 'not-required',
-    // Never resume broadcasting until a fresh board position arrives.
+    // Preserve an interrupted/manual state over restart. No new move can
+    // publish until a fresh physical observation has been verified.
     offline: true,
-    state: 'PENDING_VERIFICATION',
+    state: game.state === 'MANUAL_INTERVENTION' || game.state === 'RECONCILIATION_REQUIRED'
+      ? game.state : 'PENDING_VERIFICATION',
     reason: 'Restarted; waiting to reverify the physical board before publishing.',
     discrepancySince: undefined,
     stableSince: undefined,
@@ -378,6 +391,8 @@ export function observeLiveChess(
   if (event.start !== undefined) game.reconstructionStart = event.start;
   if (event.match !== undefined) game.match = event.match;
   game.lastEventAt = now;
+  game.samples = [{ at: now, physical: game.physicalBoard, match: game.match,
+    reconstructedCount: game.reconstructedSan?.length, clockRun: game.clock?.run }, ...source.samples].slice(0, 80);
   game.offline = false;
   reevaluate(game, now, config, clockPressed);
   return game;
