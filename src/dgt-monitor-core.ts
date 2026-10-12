@@ -311,6 +311,23 @@ export function guardDgtPgnUpload(
       if ((white === 0 && clock.white > 0) || (black === 0 && clock.black > 0)) {
         reason = 'PGN reports a zero clock while the current DGT reading remains positive';
       }
+      // A move comment belongs to the mover's *post-move* time, not the
+      // opponent's running clock. Check only the latest completed move, with
+      // the same reconstructed SAN list, and never infer it for custom FEN.
+      if (!reason && !headerValue(head, 'FEN') && board.san?.length) {
+        const moves = sourceMoves(game);
+        if (
+          moves &&
+          moves.length === board.san.length &&
+          moves.every((san, i) => san === board.san![i])
+        ) {
+          const last = /\{[^}]*\[%clk\s+([^\]]+)\][^}]*\}\s*(?:1-0|0-1|1\/2-1\/2|\*)?\s*$/.exec(game);
+          const reported = clockSeconds(last?.[1]);
+          const mover = moves.length % 2 === 1 ? 'white' : 'black';
+          if (reported === 0 && clock[mover] > 0)
+            reason = 'latest PGN move clock says zero while the physical DGT clock is positive';
+        }
+      }
     }
     if (reason) {
       held.push({ serialnr, boardNumber: number, reason });
