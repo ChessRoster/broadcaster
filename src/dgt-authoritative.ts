@@ -333,7 +333,11 @@ function reevaluate(game: LegalGame, now: number, config: ReconciliationConfig, 
   // A bare physical arrangement can temporarily resemble a legal rook move
   // during castling or an intermediate capture. Without a trusted complete
   // SAN reconstruction, use a longer quiet period before accepting it.
-  const requiredStable = candidate.candidate?.source === 'physical'
+  const rookCouldBeCastling =
+    candidate.candidate?.moves.length === 1 &&
+    /^R/.test(candidate.candidate.moves[0]) &&
+    /[KQkq]/.test(game.acceptedFen.split(' ')[2]);
+  const requiredStable = candidate.candidate?.source === 'physical' || rookCouldBeCastling
     ? Math.max(config.stabilizeMs * 3, 2500)
     : config.stabilizeMs;
   if (candidate.candidate && stableFor >= requiredStable) {
