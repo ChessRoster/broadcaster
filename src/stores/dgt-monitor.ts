@@ -279,6 +279,9 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
           if (generation !== connectionGeneration) return;
           stopTimers();
           if (connection === ws) connection = undefined;
+          // Never carry an old match result into a new connection: the board
+          // may have changed while the feed was offline.
+          this.boards = {};
           if (handshakeFinished) {
             const message = 'DGT LiveChess monitoring connection lost. Broadcast PGNs are no longer hardware-verified.';
             useLogStore().error(message);
