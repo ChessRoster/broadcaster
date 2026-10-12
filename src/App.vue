@@ -7,6 +7,7 @@ import { useSettingsStore } from './stores/settings';
 import { checkForUpdates } from './updater';
 import { onUnmounted } from 'vue';
 import { startPairingSync } from './stores/pairings';
+import { startDgtAuthoritativePublisher } from './stores/dgt-authority';
 import { useDgtMonitorStore } from './stores/dgt-monitor';
 import { computed } from 'vue';
 
@@ -16,6 +17,7 @@ const settings = useSettingsStore();
 const dgt = useDgtMonitorStore();
 const urgentBoards = computed(() => Object.values(dgt.boards).filter(board => board.alerted || board.state === 'NOTRESPONDING'));
 onUnmounted(startPairingSync());
+onUnmounted(startDgtAuthoritativePublisher());
 
 settings.setVersion();
 
