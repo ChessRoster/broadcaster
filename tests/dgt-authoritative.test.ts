@@ -100,7 +100,7 @@ describe('authoritative DGT game', () => {
     expect(game.moves).toEqual(base);
     game = observeLiveChess(game, { board: physical([...base, 'O-O']) }, 1000, cfg);
     game = tickReconciliation(game, 1800, cfg);
-    expect(game.moves.at(-1)).toBe('O-O');
+    expect(game.moves[game.moves.length - 1]).toBe('O-O');
   });
 
   it('accepts en passant with the appropriate full game history', () => {
@@ -112,7 +112,7 @@ describe('authoritative DGT game', () => {
     game = tickReconciliation(game, 800, cfg);
     game = observeLiveChess(game, { board: physical([...before, 'exd6']) }, 1000, cfg);
     game = tickReconciliation(game, 1800, cfg);
-    expect(game.moves.at(-1)).toBe('exd6');
+    expect(game.moves[game.moves.length - 1]).toBe('exd6');
   });
 
   it('requires the correct promotion choice', () => {
