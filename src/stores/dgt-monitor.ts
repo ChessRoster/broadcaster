@@ -76,16 +76,20 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
     },
     onBoard(data: DgtBoardUpdate, now = Date.now(), sourceTime?: number) {
       if (!data.serialnr || data.serialnr.length > 80) return;
-      // WebSocket authoritative recording is independent of LiveChess's
-      // reconstructed match flag and consumes partial events directly.
-      useDgtAuthorityStore().onBoard(data.serialnr, {
-        board: data.board,
-        san: data.san,
-        start: data.start,
-        match: data.match,
-        clock: data.clock,
-        sourceTime,
-      }, now);
+      // Connection state is independent of legality. A NOTRESPONDING or
+      // delayed physical board invalidates any prior sensor verification.
+      if (data.state === 'NOTRESPONDING' || data.state === 'INACTIVE' || data.state === 'DELAYED') {
+        useDgtAuthorityStore().boardDisconnected(data.serialnr, now);
+      } else {
+        useDgtAuthorityStore().onBoard(data.serialnr, {
+          board: data.board,
+          san: data.san,
+          start: data.start,
+          match: data.match,
+          clock: data.clock,
+          sourceTime,
+        }, now);
+      }
       const current = this.boards[data.serialnr] ?? newDgtBoard(data.serialnr, now);
       const { board, events } = applyDgtBoardUpdate(current, data, now);
       this.boards[data.serialnr] = board;
