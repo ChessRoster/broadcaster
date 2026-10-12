@@ -81,7 +81,7 @@ pub async fn dgt_ws_connect(
         }
     }
 
-    let (socket, _) = connect_async(&endpoint)
+    let (socket, _) = connect_async(endpoint.as_str())
         .await
         .map_err(|e| format!("Could not connect to LiveChess: {e}"))?;
     if generation.load(Ordering::SeqCst) != id {
