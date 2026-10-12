@@ -4,6 +4,7 @@ import { lichessApiClient } from '../client';
 import { useSettingsStore } from './settings';
 import { useUserStore } from './user';
 import { useLogStore } from './logs';
+import { useStatusStore } from './status';
 import { notify } from '../notify';
 import {
   DEFAULT_RECONCILIATION,
@@ -60,6 +61,8 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
       if (!/^[A-Za-z0-9]{8}$/.test(roundId)) throw new Error('Invalid Lichess round.');
       const user = useUserStore();
       if (!user.username || !user.accessToken) throw new Error('Sign in to Lichess before enabling recording.');
+      // Stop a currently running PGN-folder watcher before enabling a second source.
+      useStatusStore().stopRound(roundId);
       if (!this.activeRoundIds.includes(roundId)) this.activeRoundIds.push(roundId);
       this.owners[roundId] = {
         serverUrl: useSettingsStore().lichessUrl,
