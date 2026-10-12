@@ -6,43 +6,45 @@ vi.mock('../src/notify', () => ({
   notify: vi.fn(async () => undefined),
 }));
 
-class FakeWebSocket {
-  static OPEN = 1;
-  static sockets: FakeWebSocket[] = [];
-  readyState = 1;
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  onmessage: ((event: { data: string }) => void) | null = null;
-  sent: string[] = [];
-  url: string;
-  constructor(url: string) {
-    this.url = url;
-    FakeWebSocket.sockets.push(this);
+const socketState = vi.hoisted(() => ({ sockets: [] as any[] }));
+
+vi.mock('../src/dgt-websocket', () => {
+  class FakeWebSocket {
+    static OPEN = 1;
+    readyState = 1;
+    onopen: (() => void) | null = null;
+    onclose: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    onmessage: ((event: { data: string }) => void) | null = null;
+    sent: string[] = [];
+    url: string;
+    constructor(url: string) {
+      this.url = url;
+      socketState.sockets.push(this);
+    }
+    send(value: string) {
+      this.sent.push(value);
+    }
+    close() {
+      this.readyState = 3;
+      this.onclose?.();
+    }
+    receive(value: object) {
+      this.onmessage?.({ data: JSON.stringify(value) });
+    }
   }
-  send(value: string) {
-    this.sent.push(value);
-  }
-  close() {
-    this.readyState = 3;
-    this.onclose?.();
-  }
-  receive(value: object) {
-    this.onmessage?.({ data: JSON.stringify(value) });
-  }
-}
+  return { DgtSocket: FakeWebSocket };
+});
 
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(new Date('2026-10-12T12:00:00.000Z'));
-  FakeWebSocket.sockets = [];
-  vi.stubGlobal('WebSocket', FakeWebSocket);
+  socketState.sockets = [];
   setActivePinia(createPinia());
 });
 
 afterEach(() => {
   useDgtMonitorStore().disconnect();
-  vi.unstubAllGlobals();
   vi.useRealTimers();
 });
 
@@ -50,7 +52,7 @@ describe('LiveChess WebSocket connection', () => {
   it('confirms a connection only after the eboards inventory response', async () => {
     const store = useDgtMonitorStore();
     const pending = store.connect();
-    const socket = FakeWebSocket.sockets[0];
+    const socket = socketState.sockets[0];
     expect(store.status).toBe('connecting');
     socket.onopen?.();
     expect(JSON.parse(socket.sent[0])).toEqual({ id: 1, call: 'eboards' });
@@ -73,7 +75,7 @@ describe('LiveChess WebSocket connection', () => {
   it('alerts after mismatch and sends recovery after manual confirmation', async () => {
     const store = useDgtMonitorStore();
     const pending = store.connect();
-    const socket = FakeWebSocket.sockets[0];
+    const socket = socketState.sockets[0];
     socket.onopen?.();
     socket.receive({
       response: 'call',
@@ -105,7 +107,7 @@ describe('LiveChess WebSocket connection', () => {
   it('can request feed-only move reconstruction without changing tournament pairings', async () => {
     const store = useDgtMonitorStore();
     const pending = store.connect();
-    const socket = FakeWebSocket.sockets[0];
+    const socket = socketState.sockets[0];
     socket.onopen?.();
     socket.receive({
       response: 'call',
@@ -123,7 +125,7 @@ describe('LiveChess WebSocket connection', () => {
   it('does not treat a WebSocket open as a successful inventory response', async () => {
     const store = useDgtMonitorStore();
     const pending = store.connect();
-    const socket = FakeWebSocket.sockets[0];
+    const socket = socketState.sockets[0];
     socket.onopen?.();
     await vi.advanceTimersByTimeAsync(8000);
     await expect(pending).rejects.toThrow('did not respond');
@@ -133,7 +135,7 @@ describe('LiveChess WebSocket connection', () => {
   it('does not invent a hardware flag confirmation from a zero clock reading', async () => {
     const store = useDgtMonitorStore();
     const pending = store.connect();
-    const socket = FakeWebSocket.sockets[0];
+    const socket = socketState.sockets[0];
     socket.onopen?.();
     socket.receive({ response: 'call', id: 1, param: [{ serialnr: '123' }] });
     await pending;
