@@ -3,6 +3,7 @@ import { notify } from '../notify';
 import { useLogStore } from './logs';
 import { useStatusStore } from './status';
 import { DgtSocket } from '../dgt-websocket';
+import { useDgtAuthorityStore, gameKey } from './dgt-authority';
 import {
   applyDgtBoardUpdate,
   checkDgtMismatch,
@@ -23,6 +24,7 @@ interface DgtEnvelope {
   response?: string;
   id?: number;
   param?: unknown;
+  time?: number;
 }
 
 let connection: DgtSocket | undefined;
@@ -72,8 +74,18 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
         void notify('DGT LiveChess', event.message);
       }
     },
-    onBoard(data: DgtBoardUpdate, now = Date.now()) {
+    onBoard(data: DgtBoardUpdate, now = Date.now(), sourceTime?: number) {
       if (!data.serialnr || data.serialnr.length > 80) return;
+      // WebSocket authoritative recording is independent of LiveChess's
+      // reconstructed match flag and consumes partial events directly.
+      useDgtAuthorityStore().onBoard(data.serialnr, {
+        board: data.board,
+        san: data.san,
+        start: data.start,
+        match: data.match,
+        clock: data.clock,
+        sourceTime,
+      }, now);
       const current = this.boards[data.serialnr] ?? newDgtBoard(data.serialnr, now);
       const { board, events } = applyDgtBoardUpdate(current, data, now);
       this.boards[data.serialnr] = board;
@@ -113,6 +125,25 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
       );
       useLogStore().info('Requested standard-game reconstruction on DGT board ' + serialnr + '.');
     },
+    reinitializeVerifiedGame(serialnr: string, fullFen: string) {
+      const game = Object.values(useDgtAuthorityStore().games).find(
+        item => item.serialnr === serialnr && useDgtAuthorityStore().enabled(item.roundId),
+      );
+      if (!game) throw new Error('Assign an authoritative legal game first.');
+      if (game.acceptedFen !== fullFen) throw new Error('The FEN must equal the validated accepted game position.');
+      if (game.state !== 'RECONCILIATION_REQUIRED' && game.state !== 'MANUAL_INTERVENTION')
+        throw new Error('Reinitialize only when an actively monitored board needs reconciliation.');
+      const feedId = subscribed.get(serialnr);
+      if (this.status !== 'connected' || !connection || connection.readyState !== DgtSocket.OPEN || !feedId)
+        throw new Error('Connect and subscribe to the board first.');
+      connection.send(JSON.stringify({
+        id: ++subscriptionId,
+        call: 'call',
+        param: { id: feedId, method: 'setup', param: { fen: fullFen } },
+      }));
+      useLogStore().info('Operator requested LiveChess reconstruction setup from accepted legal FEN on ' + serialnr +
+        '. The board remains suspended until physically verified.');
+    },
     markManualCorrection(serialnr: string) {
       const board = this.boards[serialnr];
       if (!board?.alerted) return;
@@ -124,6 +155,9 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
       if (!this.boards[serialnr]) throw new Error('Select a connected DGT board.');
       if (!Number.isInteger(boardNumber) || boardNumber < 1 || boardNumber > 500)
         throw new Error('Board number must be between 1 and 500.');
+      const saved = useDgtAuthorityStore().games[gameKey(roundId, boardNumber)];
+      if (saved && saved.serialnr !== serialnr)
+        throw new Error('This broadcast board has an existing authoritative game history. Reassignment is blocked.');
       const collision = this.assignments.find(
         item => item.roundId === roundId && item.boardNumber === boardNumber && item.serialnr !== serialnr,
       );
@@ -170,6 +204,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
       this.error = '';
       this.connectedAt = undefined;
       this.boards = {};
+      useDgtAuthorityStore().connectionChanged(false);
     },
     async connect() {
       this.disconnect();
@@ -234,7 +269,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
               if (!entry || typeof entry !== 'object') continue;
               const board = entry as Partial<DgtBoardUpdate>;
               if (typeof board.serialnr !== 'string') continue;
-              this.onBoard(board as DgtBoardUpdate);
+              this.onBoard(board as DgtBoardUpdate, Date.now(), envelope.time);
               if (!subscribed.has(board.serialnr)) {
                 const feedId = ++subscriptionId;
                 subscribed.set(board.serialnr, feedId);
@@ -251,6 +286,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
               handshakeFinished = true;
               this.status = 'connected';
               this.connectedAt = Date.now();
+              useDgtAuthorityStore().connectionChanged(true);
               this.error = '';
               useLogStore().info(
                 'Connected to LiveChess at ' + endpoint + ' (' + Object.keys(this.boards).length + ' boards).',
@@ -263,7 +299,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
             }
           } else if (envelope.response === 'feed' && envelope.param && typeof envelope.param === 'object') {
             const payload = envelope.param as Partial<DgtBoardUpdate>;
-            if (typeof payload.serialnr === 'string') this.onBoard(payload as DgtBoardUpdate);
+            if (typeof payload.serialnr === 'string') this.onBoard(payload as DgtBoardUpdate, Date.now(), envelope.time);
           } else if (envelope.response === 'error' && !handshakeFinished) {
             this.error = 'LiveChess refused the board discovery request.';
             ws.close();
@@ -282,6 +318,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
           // Never carry an old match result into a new connection: the board
           // may have changed while the feed was offline.
           this.boards = {};
+          useDgtAuthorityStore().connectionChanged(false);
           if (handshakeFinished) {
             const message = 'DGT LiveChess monitoring connection lost. Broadcast PGNs are no longer hardware-verified.';
             useLogStore().error(message);
