@@ -99,6 +99,7 @@ describe('monitored PGN upload guarding', () => {
       ...newDgtBoard('123', NOW),
       match,
       san: ['e4', 'e5'],
+      start: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
       clock,
       clockReceivedAt: NOW,
     };
