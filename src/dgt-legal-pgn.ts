@@ -36,6 +36,8 @@ export function parseBroadcastPairings(roundId: string, pgn: string): PairingMet
     const black = headers.Black?.trim();
     if (!white || !black || /^(?:\?|bye|unknown)$/i.test(white) || /^(?:\?|bye|unknown)$/i.test(black))
       throw new Error('Broadcast board ' + boardNumber + ' has missing player names.');
+    if (headers.Result && headers.Result !== '*')
+      throw new Error('Board ' + boardNumber + ' already has an official result; do not reopen it.');
     if (headers.FEN && headers.SetUp !== '1') throw new Error('Custom starting positions require SetUp "1".');
     const initialFen = validateCompleteFen(headers.FEN || STARTING_FEN);
     return { roundId, boardNumber, white, black, initialFen, headers };
