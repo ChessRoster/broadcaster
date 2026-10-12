@@ -30,7 +30,7 @@ let enumeration: ReturnType<typeof setInterval> | undefined;
 let retry: ReturnType<typeof setTimeout> | undefined;
 let connectionGeneration = 0;
 let subscriptionId = 100;
-let subscribed = new Set<string>();
+const subscribed = new Map<string, number>();
 let desired = false;
 const heldWarnings = new Map<string, string>();
 const EVENT_LIMIT = 100;
@@ -92,6 +92,25 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
         if (result.board !== board) this.boards[board.serialnr] = result.board;
         if (result.event) this.addEvent(result.event);
       }
+    },
+    setupStandardReconstruction(serialnr: string) {
+      const feedId = subscribed.get(serialnr);
+      if (this.status !== 'connected' || !connection || connection.readyState !== WebSocket.OPEN || !feedId)
+        throw new Error('Connect to LiveChess and subscribe to this board first.');
+      // The feed's setup method requests a separate reconstruction from the
+      // standard starting position. It does not edit tournament pairings.
+      connection.send(
+        JSON.stringify({
+          id: ++subscriptionId,
+          call: 'call',
+          param: {
+            id: feedId,
+            method: 'setup',
+            param: { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1' },
+          },
+        }),
+      );
+      useLogStore().info('Requested standard-game reconstruction on DGT board ' + serialnr + '.');
     },
     markManualCorrection(serialnr: string) {
       const board = this.boards[serialnr];
@@ -179,7 +198,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
           return;
         }
         connection = ws;
-        subscribed = new Set();
+        subscribed.clear();
         let handshakeFinished = false;
         let settled = false;
         const finish = (error?: Error) => {
@@ -216,12 +235,13 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
               if (typeof board.serialnr !== 'string') continue;
               this.onBoard(board as DgtBoardUpdate);
               if (!subscribed.has(board.serialnr)) {
-                subscribed.add(board.serialnr);
+                const feedId = ++subscriptionId;
+                subscribed.set(board.serialnr, feedId);
                 ws.send(
                   JSON.stringify({
                     id: ++subscriptionId,
                     call: 'subscribe',
-                    param: { feed: 'eboardevent', id: subscriptionId, param: { serialnr: board.serialnr } },
+                    param: { feed: 'eboardevent', id: feedId, param: { serialnr: board.serialnr } },
                   }),
                 );
               }
