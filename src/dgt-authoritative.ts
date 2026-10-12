@@ -326,11 +326,19 @@ function reevaluate(game: LegalGame, now: number, config: ReconciliationConfig, 
   }
 
   const candidate = candidateFor(game);
-  if (candidate.candidate && stableFor >= config.stabilizeMs) {
-    if (game.state === 'MANUAL_INTERVENTION') return;
+  // A bare physical arrangement can temporarily resemble a legal rook move
+  // during castling or an intermediate capture. Without a trusted complete
+  // SAN reconstruction, use a longer quiet period before accepting it.
+  const requiredStable = candidate.candidate?.source === 'physical'
+    ? Math.max(config.stabilizeMs * 3, 2500)
+    : config.stabilizeMs;
+  if (candidate.candidate && stableFor >= requiredStable) {
     applyCandidate(game, candidate.candidate, now);
     return;
   }
+  // A clock press made after a legal-looking piece placement is not an illegal
+  // move notification. Wait for stabilization instead of alarming spectators.
+  const inconsistentClockPress = clockPressed && !candidate.candidate;
 
   const since = game.discrepancySince ?? now;
   if (game.discrepancySince === undefined) game.discrepancySince = now;
@@ -345,10 +353,10 @@ function reevaluate(game: LegalGame, now: number, config: ReconciliationConfig, 
     game.reason = candidate.problem || 'Reconstruction timed out; operator verification required.';
     game.spectatorNotice = 'unsupported';
     log(game, 'ambiguous', game.reason, now);
-  } else if (clockPressed || elapsed >= config.alertMs) {
+  } else if (inconsistentClockPress || elapsed >= config.alertMs) {
     if (game.state !== 'RECONCILIATION_REQUIRED') {
       game.state = 'RECONCILIATION_REQUIRED';
-      game.reason = clockPressed
+      game.reason = inconsistentClockPress
         ? 'Clock state changed while the physical position was not reconciled.'
         : candidate.problem || 'Physical position remained unrecognized after stabilization.';
       game.spectatorNotice = 'unsupported';
