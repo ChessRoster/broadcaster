@@ -172,8 +172,11 @@ export function changeConnectivity(source: LegalGame, connected: boolean, now: n
   const game = { ...source, events: [...source.events], offline: !connected };
   if (source.offline === !connected) return game;
   if (connected) {
-    game.state = 'PENDING_VERIFICATION';
-    game.reason = 'Reconnected. Waiting for a fresh physical board position.';
+    if (source.state !== 'MANUAL_INTERVENTION' && source.state !== 'RECONCILIATION_REQUIRED')
+      game.state = 'PENDING_VERIFICATION';
+    game.reason = source.state === 'MANUAL_INTERVENTION'
+      ? 'Reconnected; manual reconciliation remains required.'
+      : 'Reconnected. Waiting for a fresh physical board position.';
     game.physicalBoard = undefined;
     game.discrepancySince = undefined;
     game.stableSince = undefined;
@@ -312,6 +315,9 @@ function applyCandidate(game: LegalGame, candidate: Candidate, now: number): voi
 
 function reevaluate(game: LegalGame, now: number, config: ReconciliationConfig, clockPressed: boolean): void {
   if (game.offline || game.manualPause || !game.physicalBoard) return;
+  // Once the system has declared reconstruction ambiguous, an explicit
+  // operator decision is required, even if later sensor readings look legal.
+  if (game.state === 'MANUAL_INTERVENTION') return;
   const stableFor = now - (game.stableSince ?? now);
   const confirmed = placement(game.acceptedFen);
   if (confirmed === game.physicalBoard) {
@@ -326,7 +332,6 @@ function reevaluate(game: LegalGame, now: number, config: ReconciliationConfig, 
     return;
   }
 
-  if (game.state === 'MANUAL_INTERVENTION') return;
   const since = game.discrepancySince ?? now;
   if (game.discrepancySince === undefined) game.discrepancySince = now;
   const elapsed = now - since;
