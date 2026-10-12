@@ -1,6 +1,6 @@
 use tauri::{AppHandle, Manager};
-mod livechess;
 mod dgt_ws;
+mod livechess;
 
 #[cfg(not(target_os = "macos"))]
 use tauri_plugin_deep_link::DeepLinkExt;
