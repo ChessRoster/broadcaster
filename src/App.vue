@@ -7,10 +7,14 @@ import { useSettingsStore } from './stores/settings';
 import { checkForUpdates } from './updater';
 import { onUnmounted } from 'vue';
 import { startPairingSync } from './stores/pairings';
+import { useDgtMonitorStore } from './stores/dgt-monitor';
+import { computed } from 'vue';
 
 const user = useUserStore();
 const favorites = useFavoritesStore();
 const settings = useSettingsStore();
+const dgt = useDgtMonitorStore();
+const urgentBoards = computed(() => Object.values(dgt.boards).filter(board => board.alerted || board.state === 'NOTRESPONDING'));
 onUnmounted(startPairingSync());
 
 settings.setVersion();
@@ -219,6 +223,25 @@ requestNotificationPermission();
     <div class="pl-72">
       <main class="py-10">
         <div class="px-4 sm:px-6 lg:px-8">
+          <router-link
+            v-if="dgt.status === 'reconnecting' && dgt.connectedAt"
+            :to="{ name: RouteNames.Settings }"
+            role="alert"
+            class="mb-4 block rounded border border-amber-500 bg-amber-950 p-4 text-amber-100 hover:bg-amber-900"
+          >
+            <strong>DGT monitoring connection lost.</strong>
+            Live PGN uploads are temporarily unverified. Open Settings to check the connection.
+          </router-link>
+          <router-link
+            v-if="urgentBoards.length"
+            :to="{ name: RouteNames.Settings }"
+            role="alert"
+            class="mb-4 block rounded border border-amber-500 bg-amber-950 p-4 text-amber-100 hover:bg-amber-900"
+          >
+            <strong>DGT board requires attention:</strong>
+            {{ urgentBoards.map(board => board.serialnr).join(', ') }}.
+            Open DGT monitoring for details and correction status.
+          </router-link>
           <router-view />
         </div>
       </main>

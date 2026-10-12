@@ -62,13 +62,26 @@ async function startWatchingFolder(path: string) {
     uploadMultiGamePgn(path);
   }, 60 * 1000);
 
+  let uploadBusy = false;
+  let nextRetryAt = 0;
   const uploadIfModified = setInterval(async () => {
-    if (modifiedFiles.size === 0) return;
+    if (uploadBusy || Date.now() < nextRetryAt) return;
+    const changed = [...modifiedFiles];
+    const recovered = status.consumeDgtRefresh(props.round.round.id);
+    if (!changed.length && !recovered) return;
 
-    await uploadFolderToRound(props.round.round.id, path);
-    modifiedFiles.clear();
-
-    status.setRoundContainsAtLeastOnePgn(props.round.round.id);
+    uploadBusy = true;
+    try {
+      await uploadFolderToRound(props.round.round.id, path);
+      for (const file of changed) modifiedFiles.delete(file);
+      status.setRoundContainsAtLeastOnePgn(props.round.round.id);
+    } catch (error) {
+      if (recovered) status.requestDgtRefresh(props.round.round.id);
+      nextRetryAt = Date.now() + 10000;
+      logs.error('PGN upload failed: ' + String(error));
+    } finally {
+      uploadBusy = false;
+    }
   }, 1000);
 
   status.startRound(props.round.tour.id, props.round.round.id, path, () => {

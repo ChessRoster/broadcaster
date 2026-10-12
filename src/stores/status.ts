@@ -17,6 +17,7 @@ export const useStatusStore = defineStore('status', () => {
       watchProcess: WatchProcess;
       containsAtLeastOnePgn?: boolean;
       hasMultiGamePgn?: boolean;
+      dgtRefreshPending?: boolean;
     }[]
   >([]);
 
@@ -48,6 +49,18 @@ export const useStatusStore = defineStore('status', () => {
         unlisten,
       },
     });
+  };
+
+  const requestDgtRefresh = (roundId: string) => {
+    const round = getRound(roundId);
+    if (round) round.dgtRefreshPending = true;
+  };
+
+  const consumeDgtRefresh = (roundId: string): boolean => {
+    const round = getRound(roundId);
+    if (!round?.dgtRefreshPending) return false;
+    round.dgtRefreshPending = false;
+    return true;
   };
 
   const stopRound = (roundId: string) => {
@@ -91,6 +104,8 @@ export const useStatusStore = defineStore('status', () => {
     hasTournament,
     startRound,
     stopRound,
+    requestDgtRefresh,
+    consumeDgtRefresh,
     setRoundHasMultiGamePgn,
     roundHasMultiGamePgn,
     setRoundContainsAtLeastOnePgn,

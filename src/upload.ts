@@ -4,6 +4,7 @@ import { join, sep } from '@tauri-apps/api/path';
 import { BroadcastPgnPushTags } from './types';
 import { useLogStore } from './stores/logs';
 import { normalizeDgtClockPgn } from './dgt-clocks';
+import { useDgtMonitorStore } from './stores/dgt-monitor';
 
 const clockNoticeRounds = new Set<string>();
 const clockWarningsShown = new Set<string>();
@@ -72,11 +73,18 @@ async function pushPgnToRound(roundId: string, pgn: string): Promise<void> {
   }
 
 
+  // A mapped, actively monitored board can block only its own suspect game.
+  // Never manufacture a clock value or overwrite the operator's local PGN.
+  const monitor = useDgtMonitorStore();
+  const guard = monitor.prepareUpload(roundId, normalized.pgn);
+  monitor.recordUploadGuard(roundId, guard);
+  if (!guard.pgn.trim()) return;
+
   const pushResponse = await lichessApiClient({
     'Content-Type': 'text/plain',
   }).POST('/api/broadcast/round/{broadcastRoundId}/push', {
     params: { path: { broadcastRoundId: roundId } },
-    body: normalized.pgn,
+    body: guard.pgn,
     bodySerializer: body => body,
   });
 
