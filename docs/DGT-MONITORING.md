@@ -28,7 +28,7 @@ For rounds with an explicit DGT-serial-to-broadcast-board mapping, the upload pa
 
 - LiveChess reports a persistent unreconciled position;
 - the PGN mainline conflicts with the reconstructed move list;
-- a fresh clock snapshot reports positive time while the source PGN's corresponding `WhiteClock` or `BlackClock` header says zero.
+- a fresh clock snapshot reports positive time while the corresponding source PGN clock header or latest completed move annotation says zero (where the move list matches LiveChess).
 
 Only the affected game's PGN is held. The other games still upload. The old chapter already on Lichess remains published. Upon recovery, the folder watcher re-uploads the latest PGN without waiting for another manual file change.
 
