@@ -245,6 +245,7 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
     async publishAll(now = Date.now()) {
       const user = useUserStore();
       const settings = useSettingsStore();
+      const pending: Promise<void>[] = [];
       for (const [key, game] of Object.entries(this.games)) {
         if (!this.enabled(game.roundId) || !canPublish(game) || this.errors[key] ||
             this.errors[game.roundId] || uploadsInProgress.has(key))
@@ -266,7 +267,10 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
         if (game.lastPublishedPgn === pgn || now - (uploadAttemptAt.get(key) || 0) < 4000) continue;
         uploadAttemptAt.set(key, now);
         uploadsInProgress.add(key);
-        try {
+        // Every board has its own upload promise. One slow or rejected request
+        // must not stall independent boards within this round.
+        const send = async (): Promise<void> => {
+          try {
           // Always push the last confirmed legal position, never a physical
           // board snapshot, and never an inferred end-of-game result.
           const result = await lichessApiClient({ 'Content-Type': 'text/plain' }).POST(
@@ -287,12 +291,15 @@ export const useDgtAuthorityStore = defineStore('dgt-authority', {
           if (current) {
             this.games[key] = { ...current, lastPublishedPgn: pgn, lastPublishedAt: Date.now() };
           }
-        } catch (error) {
-          useLogStore().error('Board ' + game.boardNumber + ' Lichess upload failed: ' + String(error));
-        } finally {
-          uploadsInProgress.delete(key);
-        }
+          } catch (error) {
+            useLogStore().error('Board ' + game.boardNumber + ' Lichess upload failed: ' + String(error));
+          } finally {
+            uploadsInProgress.delete(key);
+          }
+        };
+        pending.push(send());
       }
+      await Promise.all(pending);
     },
   },
 });
