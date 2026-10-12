@@ -43,6 +43,15 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
+      - name: Verify new native dependencies and lockfile
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          cargo metadata --manifest-path src-tauri/Cargo.toml --format-version 1 > /dev/null
+          if ! git diff --quiet -- src-tauri/Cargo.lock; then
+            echo "::warning::Cargo.lock needs the resolved WebSocket dependencies"
+            git diff -- src-tauri/Cargo.lock
+          fi
       - name: Verify Linux native LiveChess runtime
         if: runner.os == 'Linux'
         shell: bash
