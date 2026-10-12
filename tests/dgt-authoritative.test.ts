@@ -120,6 +120,25 @@ describe('authoritative DGT game', () => {
     expect(game.moves[game.moves.length - 1]).toBe('O-O');
   });
 
+  it('does not blindly accept premature LiveChess Rf1 reconstruction during castling', () => {
+    const base = ['e4', 'e5', 'Nf3', 'Nc6', 'Bc4', 'Bc5'];
+    let game = boot();
+    game = observeLiveChess(game, {
+      board: physical(base), san: base, start: STARTING_FEN,
+    }, 100, cfg);
+    game = tickReconciliation(game, 800, cfg);
+    game = observeLiveChess(game, {
+      board: physical([...base, 'Rf1']), san: [...base, 'Rf1'], start: STARTING_FEN,
+    }, 1000, cfg);
+    game = tickReconciliation(game, 1800, cfg);
+    expect(game.moves).toEqual(base);
+    game = observeLiveChess(game, {
+      board: physical([...base, 'O-O']), san: [...base, 'O-O'], start: STARTING_FEN,
+    }, 2000, cfg);
+    game = tickReconciliation(game, 2700, cfg);
+    expect(game.moves).toEqual([...base, 'O-O']);
+  });
+
   it('does not flag a normal legal move merely because its clock was pressed quickly', () => {
     let game = boot();
     game = observeLiveChess(game, {
