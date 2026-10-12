@@ -45,7 +45,12 @@ export class DgtSocket {
         endpoint: this.endpoint,
         connectionId: this.connectionId,
       });
-      if (this.closed) return;
+      if (this.closed) {
+        // A cancelled connection may finish its native handshake later.
+        // Explicitly close it rather than leaving an orphaned Rust socket.
+        await invoke('dgt_ws_disconnect', { connectionId: this.connectionId }).catch(() => undefined);
+        return;
+      }
       this.readyState = DgtSocket.OPEN;
       this.onopen?.();
     } catch (error) {
