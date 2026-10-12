@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { notify } from '../notify';
 import { useLogStore } from './logs';
 import { useStatusStore } from './status';
+import { DgtSocket } from '../dgt-websocket';
 import {
   applyDgtBoardUpdate,
   checkDgtMismatch,
@@ -24,7 +25,7 @@ interface DgtEnvelope {
   param?: unknown;
 }
 
-let connection: WebSocket | undefined;
+let connection: DgtSocket | undefined;
 let pulse: ReturnType<typeof setInterval> | undefined;
 let enumeration: ReturnType<typeof setInterval> | undefined;
 let retry: ReturnType<typeof setTimeout> | undefined;
@@ -95,7 +96,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
     },
     setupStandardReconstruction(serialnr: string) {
       const feedId = subscribed.get(serialnr);
-      if (this.status !== 'connected' || !connection || connection.readyState !== WebSocket.OPEN || !feedId)
+      if (this.status !== 'connected' || !connection || connection.readyState !== DgtSocket.OPEN || !feedId)
         throw new Error('Connect to LiveChess and subscribe to this board first.');
       // The feed's setup method requests a separate reconstruction from the
       // standard starting position. It does not edit tournament pairings.
@@ -188,9 +189,9 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
     },
     openConnection(endpoint: string, generation: number): Promise<void> {
       return new Promise<void>((resolve, reject) => {
-        let ws: WebSocket;
+        let ws: DgtSocket;
         try {
-          ws = new WebSocket(endpoint);
+          ws = new DgtSocket(endpoint);
         } catch (error) {
           this.status = 'error';
           this.error = String(error);
@@ -256,7 +257,7 @@ export const useDgtMonitorStore = defineStore('dgt-monitor', {
               );
               pulse = setInterval(() => this.checkBoards(), 1000);
               enumeration = setInterval(() => {
-                if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ id: 1, call: 'eboards' }));
+                if (ws.readyState === DgtSocket.OPEN) ws.send(JSON.stringify({ id: 1, call: 'eboards' }));
               }, 20000);
               finish();
             }
