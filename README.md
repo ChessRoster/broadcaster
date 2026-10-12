@@ -39,6 +39,14 @@ This uses private LiveChess internals. Source, protocol, build instructions and 
 
 The integration workflow builds platform artifacts with the agent resource and embedded frontend. Keep each executable or application bundle together with its resource files when extracting an artifact. These development builds are unsigned and are not installers; Windows requires WebView2, and every platform requires a supported LiveChess installation. Follow the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your operating system before running normal development/build commands. CI compilation does not establish that a physical DGT board or a particular LiveChess installation has been tested on that platform.
 
+### DGT clock notation in live PGNs
+
+Broadcaster normalizes clock annotations when a PGN is identifiable as DGT LiveChess output (for example, an `Input "DGT..."` header). DGT can write `0:15` to mean **15 minutes** and `0:00.38` to mean **38 seconds**. Lichess handles the abbreviated move comments, but can interpret the `WhiteClock` and `BlackClock` headers differently. The upload path converts the recognized DGT values to unambiguous `H:MM:SS` before sending them to Lichess.
+
+The original PGN files stay unchanged, other PGN sources are left untouched, and unsupported DGT clock values produce an upload-log warning instead of being guessed at.
+
+This conversion **does not certify a flag fall or fix incorrect LiveChess hardware readings**. Lichess estimates the running clock between moves and does not know when a physical DGT clock was paused. A real board can still have time remaining while the Lichess display reaches zero, especially after stale uploads or a physical pause. Physical clocks remain authoritative; clock-display improvements for pauses would require changes beyond this app.
+
 This app is built with [Tauri](https://tauri.app/), a framework for building desktop apps with web technologies. It's written in Rust and TypeScript.
 
 Contributions are welcome. Please read our [Contributing](https://lichess.org/help/contribute) guide if you're interested in helping with this or our other projects.
