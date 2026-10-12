@@ -39,6 +39,18 @@ This uses private LiveChess internals. Source, protocol, build instructions and 
 
 The integration workflow builds platform artifacts with the agent resource and embedded frontend. Keep each executable or application bundle together with its resource files when extracting an artifact. These development builds are unsigned and are not installers; Windows requires WebView2, and every platform requires a supported LiveChess installation. Follow the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your operating system before running normal development/build commands. CI compilation does not establish that a physical DGT board or a particular LiveChess installation has been tested on that platform.
 
+### LiveChess board monitoring and operator alerts
+
+Broadcaster can subscribe to the existing LiveChess WebSocket API on this computer or a reachable
+private-network computer. Connect in **Settings** or an individual **broadcast round**, verify the
+board inventory, then map the DGT board serial numbers to the broadcast board numbers. It warns
+about persistent reconstruction failures, reports recoveries and can hold a suspect board's PGN
+while the rest of the round continues. See the [operator setup and limitations](docs/DGT-MONITORING.md).
+
+This monitor cannot certify physical flag falls or stop Lichess's browser from independently
+counting down to 0:00; it only protects against some inconsistent source PGNs and exposes
+the actual DGT clock readings.
+
 ### DGT clock notation in live PGNs
 
 Broadcaster normalizes clock annotations when a PGN is identifiable as DGT LiveChess output (for example, an `Input "DGT..."` header). DGT can write `0:15` to mean **15 minutes** and `0:00.38` to mean **38 seconds**. Lichess handles the abbreviated move comments, but can interpret the `WhiteClock` and `BlackClock` headers differently. The upload path converts the recognized DGT values to unambiguous `H:MM:SS` before sending them to Lichess.
